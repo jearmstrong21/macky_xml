@@ -1,5 +1,5 @@
 [package]
-name = "xml-rss"
+name = "macky_xml"
 version = "0.1.0"
 authors = ["Mackenzie Armstrong <jearmstrong21@gmail.com>"]
 edition = "2018"

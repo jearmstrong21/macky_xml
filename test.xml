@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>QC RSS</title>
+        <link>http://www.questionablecontent.net</link>
+        <description>The Official QC RSS Feed</description>
+        <generator>Feeder 4.0.6(5205); Mac OS X Version 11.1 (Build 20C69) https://reinventedsoftware.com/feeder/</generator>
+        <docs>http://blogs.law.harvard.edu/tech/rss</docs>
+        <language>en</language>
+        <pubDate>Thu, 28 Jan 2021 22:33:33 -0400</pubDate>
+        <lastBuildDate>Thu, 28 Jan 2021 22:33:33 -0400</lastBuildDate>
+        <atom:link href="http://www.questionablecontent.net/QCRSS.xml" rel="self" type="application/rss+xml"/>
+        <item>
+            <title>Check Your Head</title>
+            <link>http://questionablecontent.net/view.php?comic=4450</link>
+            <description><![CDATA[<p><img src="http://www.questionablecontent.net/comics/4450.png"></p>
+
+<p>a</p>]]></description>
+            <pubDate>Thu, 28 Jan 2021 22:33:30 -0400</pubDate>
+            <guid isPermaLink="false">18CE5808-C8CB-4567-8293-7560B35C5670</guid>
+        </item>
+    </channel>
+</rss>

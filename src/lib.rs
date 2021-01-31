@@ -27,10 +27,7 @@ pub struct Element {
 pub type IResult<'a, T> = nom::IResult<&'a str, T>;
 
 fn name_char(ch: char) -> bool {
-    macro_rules! r {
-        ($a: literal, $b: literal) => {$a < ch && ch < $b};
-    }
-    ch == ':' || r!('A', 'Z') || r!('a', 'z')
+    ch == ':' || ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z')
 }
 
 macro_rules! ws {
@@ -75,47 +72,41 @@ fn attribute<'a>(input: &'a str) -> IResult<(&'a str, &'a str)> {
     Ok((input, (key, value)))
 }
 
-fn start_element<'a>(input: &'a str) -> IResult<(&'a str, Vec<(&'a str, &'a str)>)> {
+pub fn element(input: &str) -> IResult<Element> {
     let (input, _) = tag("<")(input)?;
+    ws!(input);
     let (input, name) = identifier(input)?;
     let (input, attributes) = many0(attribute)(input)?;
-    let (input, _) = tag(">")(input)?;
-    Ok((input, (name, attributes)))
-}
-
-fn end_element<'a>(name: &'a str) -> impl Fn(&'a str) -> IResult<()> {
-    move |input| {
-        let (input, _) = tag("</")(input)?;
-        let (input, found_name) = identifier(input)?;
+    let (input, contents) = alt((|input| {
+        let (input, _) = tag("/>")(input)?;
+        Ok((input, vec![]))
+    }, |input| {
+        let (input, _) = tag(">")(input)?;
+        ws!(input);
+        let (input, (contents, _)) = many_till(node, tag("</"))(input)?;
+        ws!(input);
+        let (input, _) = tag(name)(input)?;
         ws!(input);
         let (input, _) = tag(">")(input)?;
-        if found_name == name {
-            Ok((input, ()))
-        } else {
-            Err(nom::Err::Error(nom::error::Error {
-                input: "invalid end element",
-                code: nom::error::ErrorKind::Verify
-            }))
-        }
-    }
-}
-
-pub fn element(input: &str) -> IResult<Element> {
-    let (input, element) = start_element(input)?;
-    let (input, (contents, _)) = many_till(node, end_element(element.0))(input)?;
-    Ok((input, Element { name: element.0.to_owned(), attributes: {
-        let mut map = HashMap::new();
-        for (key, value) in element.1 {
-            if map.contains_key(key) {
-                return Err(nom::Err::Error(nom::error::Error {
-                    input: "duplicate attribute",
-                    code: nom::error::ErrorKind::Verify
-                }))
+        Ok((input, contents))
+    }))(input)?;
+    Ok((input, Element {
+        name: name.to_string(),
+        attributes: {
+            let mut map = HashMap::new();
+            for (key, value) in &attributes {
+                if map.contains_key(key.to_owned()) {
+                    return Err(nom::Err::Error(nom::error::Error {
+                        input: "duplicate attribute",
+                        code: nom::error::ErrorKind::Verify
+                    }))
+                }
+                map.insert(key.to_string(), value.to_string());
             }
-            map.insert(key.to_owned(), value.to_owned());
-        }
-        map
-    }, contents }))
+            map
+        },
+        contents
+    }))
 }
 
 pub fn element_into_node(input: &str) -> IResult<Node> {
@@ -131,12 +122,12 @@ fn cdata_section(input: &str) -> IResult<String> {
     let (input, _) = tag("<![CDATA[")(input)?;
     let (input, data) = take_until("]]>")(input)?;
     let (input, _) = tag("]]>")(input)?;
-    Ok((input, data.to_owned()))
+    Ok((input, data.to_string()))
 }
 
 fn text_data(input: &str) -> IResult<String> {
     let (input, data) = take_while(is_char)(input)?;
-    Ok((input, data.to_owned()))
+    Ok((input, data.to_string()))
 }
 
 pub fn char_data(input: &str) -> IResult<String> {
@@ -182,7 +173,7 @@ pub fn document(input: &str) -> IResult<Document> {
     let (input, root) = element(input)?;
     Ok((input, Document {
         version,
-        encoding: encoding.map(&str::to_owned),
+        encoding: encoding.map(&str::to_string),
         root
     }))
 }
@@ -200,7 +191,7 @@ impl Element {
 
 pub fn strip_whitespace(node: Node) -> Node {
     match node {
-        Node::CharData(data) => Node::CharData(data.trim().to_owned()),
+        Node::CharData(data) => Node::CharData(data.trim().to_string()),
         Node::Element(data) => Node::Element(Element {
             name: data.name,
             attributes: data.attributes,
@@ -225,7 +216,7 @@ pub fn strip_whitespace(node: Node) -> Node {
 mod tests {
     use crate::*;
 
-    fn e(x: &'static str) {
+    fn e(x: &str) {
         let res = document(x).unwrap();
         let mut doc = res.1;
         doc.root.strip_whitespace();
@@ -233,6 +224,7 @@ mod tests {
     }
     #[test]
     fn it_works() {
-        e("<?xml version='1.5' encoding = \"utf-8\"?> <rss x=\"4\" y=' 10' ><![CDATA[</rss>]]></rss>");
+        e(&std::fs::read_to_string("test.xml").unwrap());
+        // e("<?xml version='1.5' encoding = \"utf-8\"?> <rss xmlns:atom=\"http://www.w3.org/2005/Atom\" version=\"2.0\"><![CDATA[</rss>]]></rss>");
     }
 }
