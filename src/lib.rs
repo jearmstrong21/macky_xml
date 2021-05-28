@@ -226,9 +226,7 @@ impl Parser {
         let (input, _) = tag("<")(input)?;
         let (input, name) = identifier(input)?;
         if name == "!DOCTYPE" {
-            println!("doctype {}", input);
             let (mut input, _) = take_until(">")(input)?;
-            println!("doctype 2 {}", input);
             if input.len() > 0 {
                 input = &input[1..];
             } else {
