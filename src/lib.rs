@@ -155,7 +155,7 @@ pub struct Parser {
 pub type IResult<'a, T> = nom::IResult<&'a str, T>;
 
 fn name_char(ch: char) -> bool {
-    ch == ':' || ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z')
+    ch == ':' || ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ch == '!'
 }
 
 macro_rules! ws {
@@ -225,6 +225,25 @@ impl Parser {
     pub fn element<'a>(&self, input: &'a str) -> IResult<'a, Element> {
         let (input, _) = tag("<")(input)?;
         let (input, name) = identifier(input)?;
+        if name == "!DOCTYPE" {
+            println!("doctype {}", input);
+            let (mut input, _) = take_until(">")(input)?;
+            println!("doctype 2 {}", input);
+            if input.len() > 0 {
+                input = &input[1..];
+            } else {
+                return Err(nom::Err::Error(nom::error::Error {
+                    // "expected shit after > in doctype decl"
+                    input: "expected shit after > in doctype decl",
+                    code: nom::error::ErrorKind::Tag
+                }))
+            }
+            return Ok((input, Element {
+                name: "doctype_decl".to_string(),
+                attributes: Default::default(),
+                children: vec![]
+            }))
+        }
         let name = name.to_ascii_lowercase();
         ws!(input);
         let (input, attributes) = many0(attribute)(input)?;
